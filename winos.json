@@ -1,0 +1,14 @@
+[
+  {
+    "id": 8,
+    "x":8,
+    "y":8,
+    "movable": false
+  },
+  {
+    "id": 2,
+    "x":2,
+    "y":2,
+    "movable": true
+  }
+]
