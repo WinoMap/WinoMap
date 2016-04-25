@@ -16,8 +16,10 @@ export const Chart = React.createClass({
   },
 
   componentDidUpdate: function() {
-    var el = ReactDOM.findDOMNode(this);
-    updateD3Chart(el, this.getChartState());
+    if(this.props.options.getIn(['scale','ratio']) != [1,1]){
+      var el = ReactDOM.findDOMNode(this);
+      updateD3Chart(el, this.getChartState());
+    }
   },
 
   getWinos: function() {
@@ -32,13 +34,24 @@ export const Chart = React.createClass({
     return this.props.options || {}
   },
 
-  getMainWino: function() {
+  getMainWinos: function() {
+    let result = [];
     for(var i=0; i<this.getWinos().size; i++){
       if(this.getWinos().get(i).get('main') == true){
-        console.log()
-        return this.props.winos.get(i);
+        result.push(this.getWinos().get(i));
       }
     }
+    return result;
+  },
+
+  getAnchorWinos: function() {
+    let result = [];
+    for(var i=0; i<this.getWinos().size; i++){
+      if(this.getWinos().get(i).get('main') == false){
+        result.push(this.getWinos().get(i));
+      }
+    }
+    return result;
   },
 
   getPrecision: function(){
@@ -49,10 +62,10 @@ export const Chart = React.createClass({
     return {
       //Warning, precisionDifference only translate by the X ratio
       scaledPrecision: this.getPrecision(),
-      mainWino: this.getMainWino(),
+      mainWinos: this.getMainWinos(),
       onMapClick: this.props.setEventData,
       options: this.getOptions(),
-      winos: this.getWinos(),
+      anchorWinos: this.getAnchorWinos(),
       event: this.getEvents()
     };
   },

@@ -40,55 +40,32 @@ export const createD3Chart = function(el, props, state) {
   //Draw the elements here
   $(function(){
     $("#inside").load("./res/planC.svg", function(){
-      var circle = d3.select("#inside").append("circle")
-                                        .attr("id", "marker")
-                                        .attr("cx", -500)
-                                        .attr("cy", -500)
-                                        .attr("r", 15);
-      var indicatorOne = d3.select("#inside").append("circle")
-                                              .attr("class", "cursor")
-                                              .attr("id", "i1")
-                                              .attr("cx", 0)
-                                              .attr("cy", 0)
-                                              .attr("r", 0);
-      var indicatorTwo = d3.select("#inside").append("circle")
-                                              .attr("id", "i2")
-                                              .attr("class", "cursor")
-                                              .attr("cx", 0)
-                                              .attr("cy", 0)
-                                              .attr("r", 0);
+      d3.select('#inside').append('class', 'main');
+      d3.select('#inside').append('class', 'anchor');
+      d3.select('#inside').append('class', 'areaInner');
+      d3.select('#inside').append('class', 'areaOuter');
+      d3.select('#inside').append('class', 'intersection');
 
-      //append the number of sensors we have. Currently it is fixed as 3.
-      for(var i=1;i<=3;i++){
-        //Draw the sensor point
-        d3.select("#inside").append("circle")
-                            .attr("id", "sensor"+i)
-                            .attr("class", "sensor")
-                            .attr("cx", -5)
-                            .attr("cy", -5)
-                            .attr("r", 3);
-        //Draw the sensor inner area
-        d3.select("#inside").append("circle")
-                            .attr("id", "sensorOuterArea"+i)
-                            .attr("class", "innerArea")
-                            .attr("cx", -5)
-                            .attr("cy", -5)
-                            .attr("r", 0);
+      //Prepare the scale tools helpers
+      d3.select("#inside").append("circle")
+                          .attr("class", "cursor")
+                          .attr("id", "i1")
+                          .attr("cx", 0)
+                          .attr("cy", 0)
+                          .attr("r", 0);
+      d3.select("#inside").append("circle")
+                          .attr("id", "i2")
+                          .attr("class", "cursor")
+                          .attr("cx", 0)
+                          .attr("cy", 0)
+                          .attr("r", 0);
 
-        //Draw the sensor outer area
-        d3.select("#inside").append("circle")
-                            .attr("id", "sensorInnerArea"+i)
-                            .attr("class", "outerArea")
-                            .attr("cx", -5)
-                            .attr("cy", -5)
-                            .attr("r", 0);
-      }
-      //Form for the intersection of the circles above
+      //Prepare the form for the intersection of the sensors circles /!\ May need more elements (2 per main)
       d3.select("#inside").append("g")
                           .append("path")
                           .attr("id", "intersection");
 
-      //Draw the diagonal to make it visible later, to help to place the second point when using scale tool.
+      //Prepare the diagonal to make it visible later, to help to place the second point when using scale tool.
       d3.select('#inside').append('line')
                         .attr('id', 'diagonalHelper')
                         .attr('x1', 0)
@@ -109,76 +86,65 @@ export const createD3Chart = function(el, props, state) {
     svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
   };
 
-  updateD3Chart(el, state);
+  //updateD3Chart(el, state);
 };
 
 //Update the elements depending of the state.
 export const updateD3Chart = function(el, state) {
 
+  manageMains(state);
+  manageAnchors(state);
+
   //Circle or Point mode
   if(state.options.get('precisionMode') == 'point'){
     //Point mode
-    if(state.mainWino != undefined){
+    for(var key in state.mainWinos){
+      var wino = state.mainWinos[key];
       //If we have the winos datas
-      d3.select('#marker').transition()
-                          .attr('cx', state.mainWino.get('x'))
-                          .attr('cy', state.mainWino.get('y'))
-                          .attr('r', 15)
-                          .style("opacity",1);
+      d3.select('#main'+wino.get('id')).transition().style("opacity",1);
     }
 
     //Clear the Circle mode elements
-    for(var i=1;i<=3;i++){
-      d3.select('#sensor'+i).transition().style("opacity",0);
-      d3.select('#sensorInnerArea'+i).transition().style("opacity",0).attr('r', 0);
-      d3.select('#sensorOuterArea'+i).transition().style("opacity",0).attr('r', 0);
+    for(var key in state.anchorWinos){
+      var anchor = state.anchorWinos[key];
+      d3.select('#sensor'+anchor.get('id')).transition().style("opacity",0);
+      d3.select('#sensorInnerArea'+anchor.get('id')).transition().style("opacity",0).attr('r', 0);
+      d3.select('#sensorOuterArea'+anchor.get('id')).transition().style("opacity",0).attr('r', 0);
     }
     d3.select('#intersection').transition().style("opacity",0);
 
   }else{
     //Circle mode
-    if(state.mainWino != undefined){
-      d3.select('#intersection').transition().style("opacity",0);
-      //If we have the winos datas
-      
-      //Store the datas of each circle to generate the intersection.
-      var x = [];
-      var y = [];
-      var rOuter = [];
-      var rInner = [];
 
-      //Place a blue circle for each Sensors winos
-      //WARNING : we suppose the main wino to be the first one
-      for(var i=0;i<state.winos.size;i++){
-        if(state.winos.get(i).get('main') != true){
+    /*
+    d3.select('#intersection').transition().style("opacity",0);
+    //If we have the winos datas
+    
+    //Store the datas of each circle to generate the intersection.
+    var x = [];
+    var y = [];
+    var rOuter = [];
+    var rInner = [];*/
 
-          //get the datas
-          x[i] = state.winos.get(i).get('x');
-          y[i] = state.winos.get(i).get('y')
-          rOuter[i] = state.winos.get(i).get('radius')+state.scaledPrecision;
-          rInner[i] = state.winos.get(i).get('radius')-state.scaledPrecision;
+    //Place a blue circle for each Sensors winos
+    for(var key in state.anchorWinos){
+      var anchor = state.anchorWinos[key];
 
-          //If it isn't the main wino, update the point and area
-          d3.select('#sensor'+i).transition()
-                                .attr('cx', x[i])
-                                .attr('cy', y[i])
-                                .attr('r', 3)
-                                .style("opacity",1);
+        //If it isn't the main wino, update the point and area
+        d3.select('#anchor'+anchor.get('id')).transition()
+                                            .style("opacity",1);
 
-          //Warning, is only translated by the X ratio
-          d3.select('#sensorInnerArea'+i).transition()
-                                        .attr('cx', x[i])
-                                        .attr('cy', y[i])
-                                        .attr('r', rInner[i])
-                                        .style("opacity", OPACITY.INNERAREA);
-          d3.select('#sensorOuterArea'+i).transition()
-                                        .attr('cx', x[i])
-                                        .attr('cy', y[i])
-                                        .attr('r', rOuter[i])
-                                        .style("opacity", OPACITY.OUTERAREA);
+      for(var main in state.mainWinos){
+        //Warning, is only translated by the X ratio
+        d3.select('#areaInner'+anchor.get('id')+'-'+main.get('id')).transition()
+                                                .style("opacity", OPACITY.INNERAREA);
+        d3.select('#areaOuter'+anchor.get('id')+'-'+main.get('id')).transition()
+                                                .style("opacity", OPACITY.OUTERAREA);
       }
     }
 
+    //TODO : 1 intersection circle for each wino
+/*
     //intersection circle
     var interPoints1 = intersection(x[1], y[1], rOuter[1], x[2], y[2], rOuter[2]);
     var interPoints2 = intersection(x[2], y[2], rOuter[2], x[3], y[3], rOuter[3]);
@@ -195,9 +161,13 @@ export const updateD3Chart = function(el, state) {
           .style("opacity", OPACITY.INTERSECTION);
           }
     }
+*/
 
     //Clear the Point mode elements
-    d3.select('#marker').transition().style("opacity",0);
+    for(var key in state.mainWinos){
+      var main = state.mainWinos[key];
+      d3.select('#main'+main.get('id')).transition().style("opacity",0);
+    }
   }
 
 
@@ -266,6 +236,86 @@ export const updateD3Chart = function(el, state) {
       }
   }
 };
+
+
+function manageMains(state){
+  //Manages the main winos
+  var g = d3.select('#inside').selectAll('.main');
+  var main = g.selectAll('.main').data(state.mainWinos, function(main) { return main.get('id') });
+  //ENTER
+  main.enter().append('circle')
+              .attr("class", "main")
+              .attr("r", 15)
+              .style("opacity", 0);
+  main.enter().append('g')
+              .attr('class', function(wino){ return 'areaInner'+wino.get('id')});
+  main.enter().append('g')
+              .attr('class', function(wino){ return 'areaOuter'+wino.get('id')});
+
+  //ENTER & UPDATE
+  main.attr("id", function(wino) { return "main"+wino.get('id') })
+      .attr("cx", function(wino) { return wino.get('x') })
+      .attr("cy", function(wino) { return wino.get('y') })
+
+  //EXIT
+  main.exit().remove();
+}
+
+/**
+* Update the anchors based on the new state
+*
+*/
+function manageAnchors(state){
+  //Manages the anchor winos
+  var g = d3.select('#inside').selectAll('.anchor');
+  var anchor = g.selectAll('.anchor').data(state.anchorWinos, function(anchor) { return anchor.get('id') });
+  //ENTER
+  anchor.enter().append('circle')
+              .attr("class", "anchor")
+              .attr("r", 10)
+              .style("opacity", 0);
+  //ENTER & UPDATE
+  anchor.attr("id", function(wino) { return "anchor"+wino.get('id') })
+        .attr("cx", function(wino) { return wino.get('x') })
+        .attr("cy", function(wino) { return wino.get('y') })
+  //EXIT
+  anchor.exit().remove();
+
+  for(var key in state.mainWinos){
+    //Manages the areas of the anchors
+    var main = state.mainWinos[key];
+
+    //Inner area
+    var g = d3.select('#inside').selectAll('.areaInner'+main.get('id'));
+    var areaInner = g.selectAll('.areaInner'+main.get('id')).data(state.anchorWinos, function(anchor) { return anchor.get('id') });
+    //ENTER
+    areaInner.enter().append('circle')
+            .attr("class", "areaInner")
+            .style("opacity", 0);
+    //ENTER & UPDATE
+    areaInner.attr("id", function(wino) { return 'areaInner'+main.get('id')+'-'+wino.get('id') })
+            .attr("cx", function(wino) { return wino.get('x') })
+            .attr("cy", function(wino) { return wino.get('y') })
+            .attr("r", function(wino) { return wino.getIn(['radius',main.get('id')])-state.scaledPrecision });
+    //EXIT
+    areaInner.exit().remove();
+
+    //Outer area
+    var g = d3.select('#inside').selectAll('.areaOuter'+main.get('id'));
+    var areaOuter = g.selectAll('.areaOuter'+main.get('id')).data(state.anchorWinos, function(anchor) { return anchor.get('id') });
+    //ENTER
+    areaOuter.enter().append('circle')
+            .attr("class", "areaOuter")
+            .style("opacity", 0);
+    //ENTER & UPDATE
+    areaOuter.attr("id", function(wino) { return "areaOuter"+main.get('id')+"-"+wino.get('id') })
+            .attr("cx", function(wino) { return wino.get('x') })
+            .attr("cy", function(wino) { return wino.get('y') })
+            .attr("r", function(wino) { return wino.getIn(['radius',main.get('id')])+state.scaledPrecision });
+    //EXIT
+    areaOuter.exit().remove();
+  }
+}
 
 
 //http://stackoverflow.com/questions/33330074/d3-js-detect-intersection-area
