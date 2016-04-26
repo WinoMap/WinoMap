@@ -12,7 +12,7 @@ const store = createStoreWithMiddleware(reducer);
 
 const options = Map({
         precisionMode: "point",
-        precision: 0.2,
+        precision: 0.9,
         plan: "bat_c",
         scale: Map({
           ratio: List.of(1,1),
@@ -25,7 +25,7 @@ store.dispatch({type: 'SET_OPTIONS', options: options});
 
 setInterval(() => {
   store.dispatch({type: 'API_REQUEST'})
-}, 500);
+}, 5000);
 
 ReactDOM.render(
 	<Provider store={store}>

@@ -77,11 +77,15 @@ export function setWinos(state, winos, options = Map({
 			map.updateIn([i,'x'], newX => newX = (newX * options.getIn(['ratio', 0])) + options.getIn(['offset', 0]))
 				.updateIn([i,'y'], newY => newY = (newY * options.getIn(['ratio', 1])) + options.getIn(['offset', 1]))
 		});
-		for(var id in nextState.getIn([i,'radius']).keys()){
-			nextState = nextState.updateIn([i,'radius',id], radius => radius = (radius * options.getIn(['ratio', 1])));
+		console.log(nextState.getIn([i,'radius']).toJSON());
+		for(var id in nextState.getIn([i,'radius']).toJS()){
+			console.log(nextState.getIn([i,'radius',id]));
+			nextState = nextState.updateIn([i,'radius',id], radius => radius = (radius * options.getIn(['ratio', 0])));
 		}
 		
 	}
+	/*console.log('--- SETWINOS ---');
+	console.log(nextState.toJSON());*/
   	return nextState;
 }
 
@@ -125,6 +129,7 @@ export function moveWino(state, idToMove, newX, newY, options = Map({
 		map.setIn([getRealWinoId(state, idToMove), "x"], realX)
 			.setIn([getRealWinoId(state, idToMove), "y"], realY);
 	});
+	return state;
 }
 
 /**
@@ -134,9 +139,6 @@ export function moveWino(state, idToMove, newX, newY, options = Map({
 */
 export function setMainWino(state, id){
 	var nextState = state;
-	for(var i=0;i<state.size;i++){
-		nextState = nextState.setIn([i, 'main'], false);
-	}
 	nextState = nextState.setIn([getRealWinoId(state,id), 'main'], true);
 	return nextState;
 }

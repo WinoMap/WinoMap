@@ -55,18 +55,30 @@ export const Chart = React.createClass({
   },
 
   getPrecision: function(){
-    return this.props.options.get('precision')*this.props.options.getIn(['scale','ratio',0]) || 0;
+    return this.props.options.get('precision') || 1;
+  },
+
+  isScaleDefined: function(){
+
+    //Can't compare this.props.options.getIn(['scale', 'ratio']) == [1,1], why ?
+    if(this.props.options.getIn(['scale', 'ratio','0']) == 1
+      && this.props.options.getIn(['scale', 'ratio','1']) == 1){
+      return false;
+    }else{
+      return true;
+    }
   },
 
   getChartState: function() {
     return {
       //Warning, precisionDifference only translate by the X ratio
-      scaledPrecision: this.getPrecision(),
       mainWinos: this.getMainWinos(),
       onMapClick: this.props.setEventData,
       options: this.getOptions(),
       anchorWinos: this.getAnchorWinos(),
-      event: this.getEvents()
+      event: this.getEvents(),
+      precision: this.getPrecision(),
+      isScaleDefined: this.isScaleDefined()
     };
   },
 

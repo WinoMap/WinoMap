@@ -10,7 +10,8 @@ export default store => next => action => {
     //If the action intercepted is the API call
     switch(action.type){
         case 'API_REQUEST':
-        	let x;
+            //CODE IF COORDINATES ARE TRANSMITED BY GET
+        	/*let x;
         	let y;
             let tuple;
 
@@ -30,8 +31,26 @@ export default store => next => action => {
                     return next({type: 'MOVE_WINO', id: 1, x: x, y: y})
             	});
             }
+            http.request(options, callback).end();*/
+
+            //CODE IF WINOS DATAS ARE TRANSMITTED EACH TICK
+             var options = {
+                host: 'localhost:8042',
+                path: '/'
+            };
+            var callback = function(response) {
+                var str = '';
+                response.on('data', function(chunk) {
+                    str += chunk;
+                });
+                response.on('end', function(){
+                    let winos = fromJS(JSON.parse(str));
+                    return next({type: 'SET_WINOS', winos: winos})
+                });
+            }
 
             http.request(options, callback).end();
+
             break;
         case 'SET_SCALE':
             //If the scale changes, we fetch again the data and translate them.
