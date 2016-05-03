@@ -78,7 +78,9 @@ export const Chart = React.createClass({
       anchorWinos: this.getAnchorWinos(),
       event: this.getEvents(),
       precision: this.getPrecision(),
-      isScaleDefined: this.isScaleDefined()
+      isScaleDefined: this.isScaleDefined(),
+      setMainWino: this.props.setMainWino,
+      setAnchorWino: this.props.setAnchorWino
     };
   },
 

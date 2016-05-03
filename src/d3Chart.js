@@ -6,6 +6,8 @@ const OPACITY = {
   INTERSECTION: 0.25
 };
 
+const COLORS = ['red','blue','green','pink','orange','yellow'];
+
 // d3Chart.js
 export const createD3Chart = function(el, props, state) {
 
@@ -27,7 +29,6 @@ export const createD3Chart = function(el, props, state) {
   //Click listenners
   function mouseDown() {
     let coord = d3.mouse(d3.select('#inside').node());
-    //console.log(coord);
     state.onMapClick({type: 'MAP_CLICK', x: coord[0], y: coord[1]});
   }
    
@@ -60,11 +61,6 @@ export const createD3Chart = function(el, props, state) {
                           .attr("cy", 0)
                           .attr("r", 0);
 
-      //Prepare the form for the intersection of the sensors circles /!\ May need more elements (2 per main)
-      d3.select("#inside").append("g")
-                          .append("path")
-                          .attr("id", "intersection");
-
       //Prepare the diagonal to make it visible later, to help to place the second point when using scale tool.
       d3.select('#inside').append('line')
                         .attr('id', 'diagonalHelper')
@@ -95,6 +91,7 @@ export const updateD3Chart = function(el, state) {
   if(state.isScaleDefined){
     manageMains(state);
     manageAnchors(state);
+    managePriority(state);
   }
 
   //Circle or Point mode
@@ -107,7 +104,7 @@ export const updateD3Chart = function(el, state) {
     d3.selectAll('.anchorCircle').transition().style("opacity",0);
     d3.selectAll('.areaInnerCircle').transition().style("opacity",0);
     d3.selectAll('.areaOuterCircle').transition().style("opacity",0);
-    //d3.select('#intersection').transition().style("opacity",0);
+    d3.selectAll('.intersectionArea').transition().style("opacity",0);
 
   }else{
     //Circle mode
@@ -118,6 +115,9 @@ export const updateD3Chart = function(el, state) {
     d3.selectAll('.anchorCircle').transition().style("opacity",1);
     d3.selectAll('.areaInnerCircle').transition().style("opacity",OPACITY.INNERAREA);
     d3.selectAll('.areaOuterCircle').transition().style("opacity",OPACITY.OUTERAREA);
+    d3.selectAll('.intersectionArea').transition().style("opacity",OPACITY.INTERSECTION);
+
+
 
     //TODO : 1 intersection circle for each wino
   }
@@ -202,7 +202,8 @@ function manageMains(state){
   main.enter().append('circle')
               .attr("class", "mainCircle")
               .attr("r", 15)
-              .style("opacity", 1);
+              .style("opacity", 1)
+              .on("click", function(wino) { console.log('click'); state.setAnchorWino(wino.get('id')) });
   //ENTER & UPDATE
   main.attr("id", function(wino) { return "main"+wino.get('id') })
       .attr("cx", function(wino) { return wino.get('x') })
@@ -221,24 +222,15 @@ function manageMains(state){
 *
 */
 function manageAnchors(state){
-  //Manages the anchor winos
-  var g = d3.select('#inside').selectAll('.anchor');
-  var anchor = g.selectAll('.anchorCircle').data(state.anchorWinos, function(anchor) { return anchor.get('id') });
-  //ENTER
-  anchor.enter().append('circle')
-              .attr("class", "anchorCircle")
-              .attr("r", 10)
-              .style("opacity", 1);
-  //ENTER & UPDATE
-  anchor.attr("id", function(wino) { return "anchor"+wino.get('id') })
-        .attr("cx", function(wino) { return wino.get('x') })
-        .attr("cy", function(wino) { return wino.get('y') })
-  //EXIT
-  anchor.exit().remove();
+  
+  //Store the data of the outer circles to generate the intersections
+  var intersectionDatas = {};
 
+  //For each anchor, update it's <g> containing the area circles data.
   for(var key in state.mainWinos){
-    //Manages the areas of the anchors
+
     var main = state.mainWinos[key];
+    intersectionDatas[main.get('id')] = {x: [], y: [], r: []};
 
     //Inner area
     var g = d3.select('#inside').selectAll('.areaInner'+main.get('id'));
@@ -264,12 +256,112 @@ function manageAnchors(state){
             .style("opacity", OPACITY.OUTERAREA);
     //ENTER & UPDATE
     areaOuter.attr("id", function(wino) { return "areaOuter"+main.get('id')+"-"+wino.get('id') })
-            .attr("cx", function(wino) { return wino.get('x') })
-            .attr("cy", function(wino) { return wino.get('y') })
-            .attr("r", function(wino) { return wino.getIn(['radius',''+main.get('id')])});
+            .attr("cx", function(wino) { intersectionDatas[main.get('id')]['x'].push(wino.get('x'));
+                                        return wino.get('x'); })
+            .attr("cy", function(wino) { intersectionDatas[main.get('id')]['y'].push(wino.get('y'));
+                                        return wino.get('y'); })
+            .attr("r", function(wino) { intersectionDatas[main.get('id')]['r'].push(wino.getIn(['radius',''+main.get('id')]))
+                                        return wino.getIn(['radius',''+main.get('id')])});
     //EXIT
     areaOuter.exit().remove();
   }
+
+  var intersectList = [];
+  for(var key in state.mainWinos){
+    intersectList.push({id: state.mainWinos[key].get('id'), inter: generateIntersections(intersectionDatas[state.mainWinos[key].get('id')])});
+  }
+  manageIntersections(intersectList);
+
+  //Manages the anchor winos after the circles so we can click on it
+  var g = d3.select('#inside').selectAll('.anchor');
+  var anchor = g.selectAll('.anchorCircle').data(state.anchorWinos, function(anchor) { return anchor.get('id') });
+  //ENTER
+  anchor.enter().append('circle')
+              .on("click", function(wino) { state.setMainWino(wino.get('id')) })
+              .attr("class", "anchorCircle")
+              .attr("r", 10)
+              .style("opacity", 1);
+  //ENTER & UPDATE
+  anchor.attr("id", function(wino) { return "anchor"+wino.get('id') })
+        .attr("cx", function(wino) { return wino.get('x') })
+        .attr("cy", function(wino) { return wino.get('y') })
+  //EXIT
+  anchor.exit().remove();
+
+
+}
+
+/**
+* Draw the intersections of the area circles on the screen
+* /!\ Warning! The of the winos may corrupt the intersections : process in order of the X datas.
+* TODO: manage the order of the datas
+* @param intersectionPoints array the intersections datas.
+*/
+function manageIntersections(intersectionPoints){
+  if(intersectionPoints){
+    var currentColor = -1;
+    //Outer area
+    var g = d3.select('#inside').selectAll('.intersection');
+    console.log('---');
+    var intersection = g.selectAll('.intersectionArea').data(intersectionPoints, function(d) { console.log(d.id);return d.id });
+
+    //ENTER
+    intersection.enter().append('path')
+                        .attr('class','intersectionArea');
+
+    //ENTER & UPDATE
+    intersection.attr('d', function(d) {
+            return "M" + d.inter[2][1] + "," + d.inter[2][3] + "A" + d.inter[3] + "," + d.inter[3] +
+              " 0 0,1 " + d.inter[0][0] + "," + d.inter[0][2] + "A" + d.inter[4] + "," + d.inter[4] +
+              " 0 0,1 " + d.inter[1][0] + "," + d.inter[1][2] + "A" + d.inter[5] + "," + d.inter[5] +
+              " 0 0,1 " + d.inter[2][1] + "," + d.inter[2][3];})
+        .style('opacity', OPACITY.INTERSECTION)
+        .style('fill', function(d){
+          currentColor++; return COLORS[currentColor];
+        });
+
+    //EXIT
+    intersection.exit().remove();
+  }
+}
+
+/**
+* Manage the Z-index of the elements to make the ones behind clickable
+*/
+function managePriority(state){
+  for(var key in state.mainWinos){
+    const wino = state.mainWinos[key];
+    var sel = d3.select(".main"+wino.get('id'))
+    sel.moveToFront();
+  }
+}
+
+/** Generate the intersections data for given circles data
+* @param intersectionDatas array datas of differents circles for one main wino.
+*/
+function generateIntersections(intersectionDatas){
+  var x = [], y = [], r = [];
+  for(var i=0;i<3;i++){
+    x[i] = intersectionDatas['x'][i];
+    y[i] = intersectionDatas['y'][i];
+    r[i] = intersectionDatas['r'][i];
+    //console.log('x : '+x[i]+' y : '+y[i]+' r : '+r[i]);
+  }
+  var interPoints = [];
+  interPoints[0] = intersection(x[0], y[0], r[0], x[1], y[1], r[1]);
+  interPoints[1] = intersection(x[1], y[1], r[1], x[2], y[2], r[2]);
+  interPoints[2] = intersection(x[0], y[0], r[0], x[2], y[2], r[2]);
+
+  //We need to send the radius data too
+  interPoints[3] = r[0];
+  interPoints[4] = r[1];
+  interPoints[5] = r[2];
+
+  //If there is an intersection
+  if(interPoints[0] && interPoints[1] && interPoints[2]){
+    return interPoints;
+  }
+  return false;
 }
 
 
@@ -328,3 +420,22 @@ function intersection(x0, y0, r0, x1, y1, r1) {
 
   return [xi, xi_prime, yi, yi_prime];
 }
+
+
+/**
+* Allow to count D3 selections
+*/
+d3.selection.prototype.size = function() {
+  var n = 0;
+  this.each(function() { ++n; });
+  return n;
+};
+
+/**
+* Allow to move a d3 element to front
+*/
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};

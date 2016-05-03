@@ -77,9 +77,7 @@ export function setWinos(state, winos, options = Map({
 			map.updateIn([i,'x'], newX => newX = (newX * options.getIn(['ratio', 0])) + options.getIn(['offset', 0]))
 				.updateIn([i,'y'], newY => newY = (newY * options.getIn(['ratio', 1])) + options.getIn(['offset', 1]))
 		});
-		console.log(nextState.getIn([i,'radius']).toJSON());
 		for(var id in nextState.getIn([i,'radius']).toJS()){
-			console.log(nextState.getIn([i,'radius',id]));
 			nextState = nextState.updateIn([i,'radius',id], radius => radius = (radius * options.getIn(['ratio', 0])));
 		}
 		
@@ -133,13 +131,24 @@ export function moveWino(state, idToMove, newX, newY, options = Map({
 }
 
 /**
-* Define the main wino, the one to represent on the plan.
+* Set the state of a wino as main.
 * @param: state Map store the state of the application
 * @param: id integer of the wino to define.
 */
 export function setMainWino(state, id){
 	var nextState = state;
 	nextState = nextState.setIn([getRealWinoId(state,id), 'main'], true);
+	return nextState;
+}
+
+/**
+* Set the state of a wino as an anchor.
+* @param: state Map store the state of the application
+* @param: id integer of the wino to define.
+*/
+export function setAnchorWino(state, id){
+	var nextState = state;
+	nextState = nextState.setIn([getRealWinoId(state,id), 'main'], false);
 	return nextState;
 }
 

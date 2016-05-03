@@ -36,6 +36,13 @@ export function setMainWino(id){
 	}
 }
 
+export function setAnchorWino(id){
+	return {
+		type: 'SET_ANCHOR_WINO',
+		id
+	}
+}
+
 //Options actions
 export function setOptions(options) {
 	return {
